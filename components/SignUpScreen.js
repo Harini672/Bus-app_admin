@@ -12,37 +12,37 @@ import {
   Keyboard,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const REMEMBER_KEY = 'busapp_remember_email';
-
-export default function LoginScreen({ navigation }) {
+export default function SignUpScreen({ navigation }) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const scrollRef = useRef(null);
+
   // ---- Entrance animations ----
-  const logoAnim = useRef(new Animated.Value(0)).current;
+  const iconAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(30)).current;
 
-  // ---- Press animations ----
-  const loginScale = useRef(new Animated.Value(1)).current;
-  const googleScale = useRef(new Animated.Value(1)).current;
-  const checkboxScale = useRef(new Animated.Value(1)).current;
+  // ---- Press animation ----
+  const btnScale = useRef(new Animated.Value(1)).current;
 
   // ---- Field focus animations ----
+  const nameFocusAnim = useRef(new Animated.Value(0)).current;
   const emailFocusAnim = useRef(new Animated.Value(0)).current;
   const passwordFocusAnim = useRef(new Animated.Value(0)).current;
+  const confirmFocusAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.sequence([
-      Animated.timing(logoAnim, {
+      Animated.timing(iconAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 450,
         easing: Easing.out(Easing.back(1.4)),
         useNativeDriver: true,
       }),
@@ -63,46 +63,25 @@ export default function LoginScreen({ navigation }) {
     ]).start();
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const saved = await AsyncStorage.getItem(REMEMBER_KEY);
-        if (saved) {
-          setEmail(saved);
-          setRememberMe(true);
-        }
-      } catch (e) {
-        // ignore
-      }
-    })();
-  }, []);
-
   const animateFocus = (anim, toValue) => {
     Animated.timing(anim, {
       toValue,
       duration: 180,
       easing: Easing.out(Easing.ease),
-      useNativeDriver: false, // animating border color, can't use native driver
+      useNativeDriver: false,
     }).start();
   };
 
-  const pressIn = (anim) => {
-    Animated.spring(anim, { toValue: 0.96, useNativeDriver: true, speed: 50 }).start();
+  const pressIn = () => {
+    Animated.spring(btnScale, { toValue: 0.96, useNativeDriver: true, speed: 50 }).start();
   };
-  const pressOut = (anim) => {
-    Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 30 }).start();
-  };
-
-  const toggleRemember = () => {
-    setRememberMe((r) => !r);
-    Animated.sequence([
-      Animated.spring(checkboxScale, { toValue: 0.7, useNativeDriver: true, speed: 50 }),
-      Animated.spring(checkboxScale, { toValue: 1, useNativeDriver: true, speed: 30 }),
-    ]).start();
+  const pressOut = () => {
+    Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, speed: 30 }).start();
   };
 
   const validate = () => {
     const newErrors = {};
+    if (!name.trim()) newErrors.name = 'Name is required';
     if (!email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -113,48 +92,44 @@ export default function LoginScreen({ navigation }) {
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
+    if (confirmPassword !== password) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async () => {
+  const handleSignUp = async () => {
     Keyboard.dismiss();
     if (!validate()) return;
-
     setLoading(true);
     try {
+      // TODO: replace with your real sign-up API call
       await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      if (rememberMe) {
-        await AsyncStorage.setItem(REMEMBER_KEY, email.trim());
-      } else {
-        await AsyncStorage.removeItem(REMEMBER_KEY);
-      }
-
-      // navigation.replace('Dashboard');
-      Alert.alert('Success', 'Logged in successfully!');
+      Alert.alert('Account created', 'You can now log in.', [
+        { text: 'OK', onPress: () => navigation.navigate('Login') },
+      ]);
     } catch (e) {
-      Alert.alert('Login failed', 'Something went wrong. Please try again.');
+      Alert.alert('Sign up failed', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    navigation.navigate('GoogleAuth');
-  };
+  const borderColor = (anim, fieldError) =>
+    anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [fieldError ? ERROR : BORDER, PRIMARY],
+    });
 
-  const emailBorderColor = emailFocusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [errors.email ? ERROR : BORDER, PRIMARY],
-  });
-  const passwordBorderColor = passwordFocusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [errors.password ? ERROR : BORDER, PRIMARY],
-  });
+  const nameBorderColor = borderColor(nameFocusAnim, errors.name);
+  const emailBorderColor = borderColor(emailFocusAnim, errors.email);
+  const passwordBorderColor = borderColor(passwordFocusAnim, errors.password);
+  const confirmBorderColor = borderColor(confirmFocusAnim, errors.confirmPassword);
 
   return (
     <KeyboardAwareScrollView
+      ref={scrollRef}
       style={styles.flex}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
@@ -167,18 +142,24 @@ export default function LoginScreen({ navigation }) {
       keyboardOpeningTime={0}
     >
       <View style={styles.container}>
-        {/* Logo / Brand */}
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backText}>{'‹'} Back</Text>
+        </TouchableOpacity>
+
+        {/* Icon */}
         <Animated.View
           style={[
-            styles.brandWrap,
-            { opacity: logoAnim, transform: [{ scale: logoAnim }] },
+            styles.iconWrap,
+            { opacity: iconAnim, transform: [{ scale: iconAnim }] },
           ]}
         >
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoEmoji}>🚌</Text>
+          <View style={styles.iconCircle}>
+            <Text style={styles.iconEmoji}>📝</Text>
           </View>
-          <Text style={styles.brandTitle}>WHERE IS MY BUS?</Text>
-          <Text style={styles.brandSubtitle}>Admin Portal</Text>
         </Animated.View>
 
         {/* Card */}
@@ -188,10 +169,31 @@ export default function LoginScreen({ navigation }) {
             { opacity: cardAnim, transform: [{ translateY: cardTranslateY }] },
           ]}
         >
-          <Text style={styles.heading}>Admin Login</Text>
+          <Text style={styles.heading}>Create Admin Account</Text>
           <Text style={styles.subheading}>
-            Sign in to manage routes, buses & drivers
+            Sign up to start managing your bus fleet
           </Text>
+
+          {/* Name */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Full Name</Text>
+            <Animated.View style={[styles.inputWrap, { borderColor: nameBorderColor }]}>
+              <TextInput
+                style={styles.input}
+                placeholder="Jane Admin"
+                placeholderTextColor="#A0A3BD"
+                value={name}
+                onFocus={() => animateFocus(nameFocusAnim, 1)}
+                onBlur={() => animateFocus(nameFocusAnim, 0)}
+                onChangeText={(t) => {
+                  setName(t);
+                  if (errors.name) setErrors((p) => ({ ...p, name: null }));
+                }}
+                returnKeyType="next"
+              />
+            </Animated.View>
+            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+          </View>
 
           {/* Email */}
           <View style={styles.fieldGroup}>
@@ -234,8 +236,7 @@ export default function LoginScreen({ navigation }) {
                 }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
+                returnKeyType="next"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword((s) => !s)}
@@ -248,74 +249,55 @@ export default function LoginScreen({ navigation }) {
             {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
           </View>
 
-          {/* Remember me + Forgot password row */}
-          <View style={styles.row}>
-            <TouchableOpacity
-              style={styles.rememberWrap}
-              onPress={toggleRemember}
-              activeOpacity={0.7}
-            >
-              <Animated.View
-                style={[
-                  styles.checkbox,
-                  rememberMe && styles.checkboxChecked,
-                  { transform: [{ scale: checkboxScale }] },
-                ]}
-              >
-                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
-              </Animated.View>
-              <Text style={styles.rememberText}>Remember me</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </TouchableOpacity>
+          {/* Confirm Password */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <Animated.View style={[styles.inputWrap, { borderColor: confirmBorderColor }]}>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#A0A3BD"
+                value={confirmPassword}
+                onFocus={() => animateFocus(confirmFocusAnim, 1)}
+                onBlur={() => animateFocus(confirmFocusAnim, 0)}
+                onChangeText={(t) => {
+                  setConfirmPassword(t);
+                  if (errors.confirmPassword)
+                    setErrors((p) => ({ ...p, confirmPassword: null }));
+                }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                returnKeyType="done"
+                onSubmitEditing={handleSignUp}
+              />
+            </Animated.View>
+            {errors.confirmPassword ? (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            ) : null}
           </View>
 
-          {/* Login button */}
-          <Animated.View style={{ transform: [{ scale: loginScale }] }}>
+          {/* Sign up button */}
+          <Animated.View style={{ transform: [{ scale: btnScale }] }}>
             <TouchableOpacity
-              style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
-              onPress={handleLogin}
-              onPressIn={() => pressIn(loginScale)}
-              onPressOut={() => pressOut(loginScale)}
+              style={[styles.btn, loading && styles.btnDisabled]}
+              onPress={handleSignUp}
+              onPressIn={pressIn}
+              onPressOut={pressOut}
               disabled={loading}
               activeOpacity={0.9}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.loginBtnText}>Login</Text>
+                <Text style={styles.btnText}>Sign Up</Text>
               )}
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Google button */}
-          <Animated.View style={{ transform: [{ scale: googleScale }] }}>
-            <TouchableOpacity
-              style={styles.googleBtn}
-              onPress={handleGoogleLogin}
-              onPressIn={() => pressIn(googleScale)}
-              onPressOut={() => pressOut(googleScale)}
-              activeOpacity={0.9}
-            >
-              <Text style={styles.googleG}>G</Text>
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Sign up link */}
-          <View style={styles.signupRow}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-              <Text style={styles.signupLink}>Sign Up</Text>
+          <View style={styles.loginRow}>
+            <Text style={styles.loginText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.loginLink}>Log In</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -334,26 +316,20 @@ const ERROR = '#E5484D';
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: BG },
-  scrollContent: { flexGrow: 1, paddingTop: 40, paddingBottom: 60 },
+  scrollContent: { flexGrow: 1, paddingTop: 32, paddingBottom: 60 },
   container: { paddingHorizontal: 24 },
-  brandWrap: { alignItems: 'center', marginBottom: 28 },
-  logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  backBtn: { marginBottom: 12 },
+  backText: { fontSize: 15, color: PRIMARY, fontWeight: '700' },
+  iconWrap: { alignItems: 'center', marginBottom: 18 },
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#EDEBFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
-  logoEmoji: { fontSize: 30 },
-  brandTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: PRIMARY,
-    letterSpacing: 0.5,
-  },
-  brandSubtitle: { fontSize: 13, color: TEXT_MUTED, marginTop: 4 },
+  iconEmoji: { fontSize: 26 },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
@@ -365,7 +341,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   heading: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: TEXT_DARK,
     textAlign: 'center',
@@ -375,9 +351,9 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     textAlign: 'center',
     marginTop: 6,
-    marginBottom: 24,
+    marginBottom: 22,
   },
-  fieldGroup: { marginBottom: 16 },
+  fieldGroup: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: '600', color: TEXT_DARK, marginBottom: 6 },
   inputWrap: {
     flexDirection: 'row',
@@ -392,63 +368,22 @@ const styles = StyleSheet.create({
   eyeBtn: { paddingLeft: 8, paddingVertical: 6 },
   eyeText: { fontSize: 12, fontWeight: '700', color: PRIMARY },
   errorText: { fontSize: 12, color: ERROR, marginTop: 6 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 22,
-    marginTop: 4,
-  },
-  rememberWrap: { flexDirection: 'row', alignItems: 'center' },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  checkboxChecked: { backgroundColor: PRIMARY, borderColor: PRIMARY },
-  checkmark: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  rememberText: { fontSize: 13, color: TEXT_DARK },
-  forgotText: { fontSize: 13, color: PRIMARY, fontWeight: '700' },
-  loginBtn: {
+  btn: {
     backgroundColor: PRIMARY,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
     shadowColor: PRIMARY,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 3,
   },
-  loginBtnDisabled: { backgroundColor: PRIMARY_DARK, opacity: 0.8 },
-  loginBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 22 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: BORDER },
-  dividerText: {
-    marginHorizontal: 12,
-    fontSize: 12,
-    color: TEXT_MUTED,
-    fontWeight: '600',
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    borderRadius: 14,
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
-  },
-  googleG: { fontSize: 16, fontWeight: '800', color: '#4285F4', marginRight: 10 },
-  googleBtnText: { fontSize: 15, fontWeight: '600', color: TEXT_DARK },
-  signupRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-  signupText: { fontSize: 13, color: TEXT_MUTED },
-  signupLink: { fontSize: 13, color: PRIMARY, fontWeight: '700' },
+  btnDisabled: { backgroundColor: PRIMARY_DARK, opacity: 0.8 },
+  btnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  loginText: { fontSize: 13, color: TEXT_MUTED },
+  loginLink: { fontSize: 13, color: PRIMARY, fontWeight: '700' },
 });
