@@ -1,5 +1,11 @@
 import React from 'react';
-import AdminDashboard from './src/screens/AdminDashboard';  
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AdminDashboard from './src/screens/AdminDashboard';
+
 export default function App() {
-  return <AdminDashboard />;
+  return (
+    <SafeAreaProvider>
+      <AdminDashboard />
+    </SafeAreaProvider>
+  );
 }
