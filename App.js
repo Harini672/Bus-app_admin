@@ -1,5 +1,11 @@
-import AppNavigator from './components/AppNavigator';
+import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AdminDashboard from './src/screens/AdminDashboard';
 
 export default function App() {
-  return <AppNavigator />;
+  return (
+    <SafeAreaProvider>
+      <AdminDashboard />
+    </SafeAreaProvider>
+  );
 }
