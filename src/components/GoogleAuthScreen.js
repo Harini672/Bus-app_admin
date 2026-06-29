@@ -36,7 +36,7 @@ export default function GoogleAuthScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Dashboard')}
+        onPress={() => navigation.navigate('AdminDashboard')}
       >
         <Text style={styles.buttonText}>
           Continue

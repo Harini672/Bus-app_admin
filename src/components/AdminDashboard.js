@@ -9,7 +9,7 @@ import {
   Dimensions,
   Pressable,
 } from "react-native";
-
+import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,10 +17,11 @@ import {
   dashboardStats,
   recentRequests,
 } from "../data/dashboardData";
-import PassStatusChart from "../components/PassStatusChart";
-import UsageChart from "../components/UsageChart";
-import StatsCard from "../components/StatsCard";
-import RequestCard from "../components/RequestCard";
+import PassStatusChart from "./PassStatusChart";
+import UsageChart from "./UsageChart";
+import StatsCard from "./StatsCard";
+import RequestCard from "./RequestCard";
+import BottomNavigation from "./BottomNavigation";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DRAWER_WIDTH = Math.min(300, SCREEN_WIDTH * 0.78);
@@ -39,6 +40,7 @@ const TAB_ITEMS = [
 ];
 
 export default function AdminDashboard() {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -125,10 +127,29 @@ export default function AdminDashboard() {
             <View style={styles.drawerBody}>
               {MENU_ITEMS.map((item) => (
                 <TouchableOpacity
-                  key={item.key}
-                  style={styles.menuItem}
-                  onPress={closeMenu}
-                >
+  key={item.key}
+  style={styles.menuItem}
+  onPress={() => {
+    closeMenu();
+
+    switch (item.key) {
+      case "create-driver":
+        navigation.navigate("CreateDriver");
+        break;
+
+      case "pass-requests":
+        navigation.navigate("PassRequests");
+        break;
+
+      case "feedback":
+        navigation.navigate("Feedback");
+        break;
+
+      default:
+        break;
+    }
+  }}
+>
                   <MaterialIcons
                     name={item.icon}
                     size={22}
@@ -145,7 +166,10 @@ export default function AdminDashboard() {
               <View style={styles.drawerDivider} />
               <TouchableOpacity
                 style={[styles.menuItem, styles.logoutItem]}
-                onPress={closeMenu}
+                onPress={() => {
+                  closeMenu();
+                  navigation.navigate("Login");
+                }}
               >
                 <MaterialIcons
                   name="logout"
@@ -166,7 +190,7 @@ export default function AdminDashboard() {
       >
         {/* Create Driver */}
 
-        <TouchableOpacity style={styles.driverBtn}>
+        <TouchableOpacity style={styles.driverBtn} onPress={() => navigation.navigate("CreateDriver")}>
           <MaterialIcons name="person-add" color="white" size={22} />
 
           <Text style={styles.driverText}>Create New Driver</Text>
@@ -233,34 +257,7 @@ export default function AdminDashboard() {
       </ScrollView>
 
       {/* Bottom tab bar */}
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 10 }]}>
-        {TAB_ITEMS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={styles.tabItem}
-              onPress={() => setActiveTab(tab.key)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons
-                name={tab.icon}
-                size={24}
-                color={isActive ? "#8A84FF" : "#8A8A8A"}
-              />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isActive && styles.tabLabelActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-              {isActive && <View style={styles.tabIndicator} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <BottomNavigation activeTab="dashboard"/>
     </View>
   );
 }

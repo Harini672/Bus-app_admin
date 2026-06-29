@@ -12,6 +12,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import BottomNavigation from './BottomNavigation';
 
 const AVATAR_COLORS = [
   { bg: '#E6F1FB', fg: '#185FA5' },
@@ -426,11 +427,14 @@ export default function PassRequestsScreen() {
       />
 
       <DeclineModal
-        visible={declineVisible}
-        onClose={handleDeclineClose}
-        onSubmit={handleDeclineSubmit}
-      />
-    </SafeAreaView>
+  visible={declineVisible}
+  onClose={handleDeclineClose}
+  onSubmit={handleDeclineSubmit}
+/>
+
+<BottomNavigation activeTab="requests" />
+
+</SafeAreaView>
   );
 }
 
@@ -489,7 +493,7 @@ const styles = StyleSheet.create({
   filterBtnText: { fontSize: 12, color: '#666' },
   filterBtnTextActive: { color: '#fff' },
 
-  listContent: { padding: 12 },
+  listContent: { padding: 12, paddingBottom: 100 },
 
   card: {
     backgroundColor: '#fff',
