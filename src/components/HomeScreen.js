@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import CustomButton from './CustomButton';
 
+
 export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/bus.png')}
-        style={styles.image}
-      />
+  source={require('../../assets/bus.png')}
+  style={styles.image}
+/>
 
       <Text style={styles.heading}>
         WHERE IS MY BUS?

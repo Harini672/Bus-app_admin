@@ -31,7 +31,7 @@ export default function LoginScreen({ navigation }) {
   style={styles.loginButton}
   onPress={() => {
     console.log("Login clicked");
-    navigation.navigate('Dashboard');
+    navigation.navigate('AdminDashboard');
   }}
 >
         <Text style={styles.buttonText}>
@@ -51,9 +51,9 @@ export default function LoginScreen({ navigation }) {
   }}
 >
         <Image
-          source={require('../assets/google.png')}
-          style={styles.googleIcon}
-        />
+  source={require('../../assets/google.png')}
+  style={styles.googleIcon}
+/>
 
         <Text style={styles.googleText}>
           Continue with Google
